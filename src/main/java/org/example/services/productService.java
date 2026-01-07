@@ -4,6 +4,7 @@ package org.example.services;
 import org.example.dto.productPatchDTO;
 import org.example.dto.productRequestDTO;
 import org.example.exception.customException;
+import org.example.model.Category;
 import org.example.model.Product;
 import org.example.repository.categoryRepository;
 import org.example.repository.productRepository;
@@ -74,7 +75,7 @@ public class productService {
     /**
      * Creates a new product from the provided request data.
      *
-     * @param requestBody a map containing the product details:
+     * @param //requestBody a map containing the product details:
      *                    - "name": String, required
      *                    - "price": numeric (positive integer), required
      *                    - "categoryId": numeric, must correspond to an existing category, required
@@ -93,10 +94,13 @@ public class productService {
         if (!categoryRepo.existsById(dto.getCategoryId())) {
             throw new customException.ResourceNotFoundException("Category with ID " + dto.getCategoryId() + " does not exist");
         }
+        // Check if the category ID exists
+        Category category = categoryRepo.findById(dto.getCategoryId())
+                .orElseThrow(() -> new customException.ResourceNotFoundException("Category with ID " + dto.getCategoryId() + " does not exist"));
         Product product = new Product();
         product.setName(dto.getName().trim());
         product.setPrice(dto.getPrice());
-        product.setcategoryId(dto.getCategoryId());
+        product.setCategory(category);
         return repo.save(product);
     }
     /**
@@ -113,8 +117,46 @@ public class productService {
      * @throws customException.DuplicateResourceException if the new name conflicts with another product's name.
      */
 
+//    public Product updateProduct(int id, productPatchDTO dto) {
+//
+//        Product product = getProductById(id);
+//
+//        // Track update so we can reject PATCH with empty body
+//        boolean hasUpdate = false;
+//
+//        if (dto.getName() != null) {
+//            String newName = dto.getName().trim();
+//            if (newName.isEmpty()) {
+//                throw new customException.ValidationException("Product name cannot be empty");
+//            }
+//            if (repo.existsByNameIgnoreCase(newName) && !product.getName().equalsIgnoreCase(newName)) {
+//                throw new customException.DuplicateResourceException("Product with name '" + newName + "' already exists");
+//            }
+//            product.setName(newName);
+//            hasUpdate = true;
+//        }
+//        if (dto.getPrice() != null) {
+//            if (dto.getPrice() <= 0) {
+//                throw new customException.ValidationException("Price must be greater than 0");
+//            }
+//            product.setPrice(dto.getPrice());
+//            hasUpdate = true;
+//        }
+//        if (dto.getCategoryId() != null) {
+//            if (!categoryRepo.existsById(dto.getCategoryId())) {
+//                throw new customException.ResourceNotFoundException("Category with ID " + dto.getCategoryId() + " does not exist");
+//            }
+//            product.setcategoryId(dto.getCategoryId());
+//            hasUpdate = true;
+//        }
+//
+//        if (!hasUpdate) {
+//            throw new customException.ValidationException("At least one field must be provided for update");
+//        }
+//
+//        return repo.save(product);
+//    }
     public Product updateProduct(int id, productPatchDTO dto) {
-
         Product product = getProductById(id);
 
         // Track update so we can reject PATCH with empty body
@@ -131,6 +173,7 @@ public class productService {
             product.setName(newName);
             hasUpdate = true;
         }
+
         if (dto.getPrice() != null) {
             if (dto.getPrice() <= 0) {
                 throw new customException.ValidationException("Price must be greater than 0");
@@ -138,11 +181,11 @@ public class productService {
             product.setPrice(dto.getPrice());
             hasUpdate = true;
         }
+
         if (dto.getCategoryId() != null) {
-            if (!categoryRepo.existsById(dto.getCategoryId())) {
-                throw new customException.ResourceNotFoundException("Category with ID " + dto.getCategoryId() + " does not exist");
-            }
-            product.setcategoryId(dto.getCategoryId());
+            Category category = categoryRepo.findById(dto.getCategoryId())
+                    .orElseThrow(() -> new customException.ResourceNotFoundException("Category with ID " + dto.getCategoryId() + " does not exist"));
+            product.setCategory(category); // Set the Category object, not the categoryId
             hasUpdate = true;
         }
 
@@ -152,6 +195,7 @@ public class productService {
 
         return repo.save(product);
     }
+
     /**
      * Deletes a product by its ID.
      *
