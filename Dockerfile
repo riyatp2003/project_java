@@ -1,24 +1,21 @@
 # -------- BUILD STAGE --------
-FROM maven:4.0.0-eclipse-temurin-24 AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy pom first to cache dependencies
+# Cache dependencies
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Copy source and build
+# Build app
 COPY src ./src
 RUN mvn clean package -DskipTests
 
 # -------- RUNTIME STAGE --------
-FROM eclipse-temurin:24-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# Copy jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Render provides PORT env variable
+# Render injects PORT
 EXPOSE 8080
-
-# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]
